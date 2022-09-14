@@ -1,0 +1,151 @@
+﻿@model CrudExample.Models.OrderVM
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<div class="col-md-8">
+    <div class="card card-primary">
+        <div class="card-header">
+            <h3 class="card-title">
+                Order Create
+            </h3>
+        </div>
+        <form method="post">
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="orderNo">Order No</label>
+                    <input asp-for="OrderNo" class="form-control" placeholder="Enter Order No.." />
+                </div>
+                <div class="form-group">
+                    <label for="ordate">Order Date</label>
+                    <input asp-for="OrderDate" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label for="customer">Customer</label>
+                    <input asp-for="Customer" class="form-control" placeholder="Enter Customer Name.." />
+                </div>
+                <fieldset>
+                    <legend>Item Information</legend>
+                    <div class="form-group">
+                        <label for="item">Item</label>
+                        @Html.DropDownListFor(m=>m.ItemId,Model.ItemList,"---Select---", new{@class="form-control"})
+                    </div>
+                    <div class="form-group">
+                        <label for="qty">Qty</label>
+                        <input asp-for="Qty" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label for="uprice">Unit Price</label>
+                        <input asp-for="UnitPrice" class="form-control" />
+                    </div>
+                </fieldset>
+            </div>
+            <div class="card-footer">
+                <input type="button" class="btn btn-primary" id="add" value="Add" />
+                @* <button type="submit" class="btn btn-primary" id="add">Submit</button>*@
+            </div>
+
+        </form>
+        <table class="table table-bordered table-responsive" id="Adddatatable" style="width:100%">
+            <thead>
+                <tr>
+                    <th width="10px">SL</th>
+                    <th>Item<sapn>&nbsp;</sapn>Name</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Line Total</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyId"></tbody>
+
+        </table>
+        <div class="col-md-8">
+            <input type="button" class="btn btn-primary" id="save" value="Submit" />
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+         $(document).ready(function(){
+            $("#Adddatatable").DataTable();
+            var Orders=[];
+            $(document).on("click","#add",function(){
+
+                var ItemId = $("#ItemId option:selected").val();
+                var ItemName = $("#ItemId option:selected").text();
+                var UnitPrice = $("#UnitPrice").val();
+                var Qty = $("#Qty").val();
+                var Item={
+                    ItemId: ItemId, ItemName: ItemName, UnitPrice: UnitPrice, Qty: Qty,Sl:0
+                }
+                Item.Sl=Orders.length+1;
+                Orders.push(Item);
+                addOnTable();
+            });
+            function addOnTable(){
+                $("#tbodyId").empty();
+                var sl=0;
+                $.each(Orders,function(index,data){
+                    ++sl;
+                    data.Sl=sl;
+                    $("#tbodyId").append('<tr><td>'+sl+'</td><td>'
+                        + data.ItemName + '</td><td>'
+                        + data.Qty + '</td><td>'
+                        + data.UnitPrice + '</td><td>'
+                        + data.Qty * data.UnitPrice + '</td><td>'
+                        +'<a href="#" data-id="'+sl+'" id="delete" value="'+sl+'"><i class="glyphicon glyphicon-trash"></i></a>'+'</td></tr>'
+                    );
+                })
+            }
+            $(document).on("click","#delete",function(){
+                var id=$(this).attr("value");
+                deleteRow(id);
+                addOnTable();
+            });
+            function deleteRow(sl){
+                var newOrder=[];
+                var newSl=0;
+                $.each(Orders,function(index,data){
+                    newSl++;
+                    data.Sl=newSl;
+                    data.Id=0;
+                    newOrder.push(data);
+                })
+                Orders=new Array();
+                Orders=newOrder;
+            }
+
+            $(document).on("click","#save",function(){
+                var OrderNo=$("#OrderNo").val();
+                var OrderDate=$("#OrderDate").val();
+                var Customer=$("#Customer").val();
+                var orderInfo={
+                    OrderNo: OrderNo, OrderDate: OrderDate, Customer: Customer
+                }
+                if(Orders!=0){
+                    $.ajax({
+                        url:'@Url.Action("OrderSave","Order")',
+                        type:'POST',
+                        data: { model:orderInfo ,itemList:Orders},
+                        datatype:'json',
+                        success:function(datas){
+                            if (datas != 0) {
+                                alert("Successfully saved!");
+
+                                //function () {
+                                //    clearItem();
+                                //});
+                                //$("#save").prop("disabled", false);
+                                orders = [];
+                                $('#tbodyId').empty();
+
+                            }
+                        }
+                    })
+                }
+            });
+        });
+    </script>
+}

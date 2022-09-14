@@ -1,0 +1,173 @@
+﻿@model CrudExample.Models.ItemsVM
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<div class="col-md-8">
+    <div class="card card-primary">
+        <div class="card-header">
+            <h3 class="card-title">
+                Item Create
+            </h3>
+        </div>
+        <form method="post">
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="code">Code</label>
+                    <input asp-for="Code" class="form-control" placeholder="Enter code.." />
+                </div>
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input asp-for="Name" class="form-control" placeholder="Enter name.." />
+                </div>
+                <div class="form-group">
+                    <label for="name">Category</label>
+                    @Html.DropDownListFor(m=>m.CategoryId,Model.CategoryList,"---Select---", new{@class="form-control"})
+                </div>
+                <div class="form-group">
+                    <label for="price">Price</label>
+                    <input asp-for="Price" class="form-control" placeholder="Enter name.." />
+                </div>
+                <div class="form-group">
+                    <label for="desc">Description</label>
+                   @* <input asp-for="Name" class="form-control" placeholder="Enter name.." />*@
+                    <textarea asp-for="Description" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="card-footer">
+                <input type="button" class="btn btn-primary" id="add" value="Add" />
+               @* <button type="submit" class="btn btn-primary" id="add">Submit</button>*@
+            </div>
+            
+        </form>
+        <table class="table table-bordered table-responsive" id="Adddatatable" style="width:100%">
+            <thead>
+                <tr>
+                    <th width="10px">SL</th>
+                    <th>Code</th>
+                    <th>Item<sapn>&nbsp;</sapn>Name</th>
+                    <th>Price</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyId"></tbody>
+
+        </table>
+        <div class="col-md-8">
+            <input type="button" class="btn btn-primary" id="save" value="Submit" />
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('#Adddatatable').DataTable();
+            var orders=[];
+            var Items=[];
+            $('#add').click(function(){
+                var Code=$('#Code').val();
+                var Name = $('#Name').val();
+                var Price = $('#Price').val();
+                var Description = $('#Description').val();
+                var CategoryId = $('#CategoryId option:selected').val();
+                var Category = $('#CategoryId option:selected').text();
+
+                if(Code==""){
+                    alert("Please provide a code!");
+                    return;
+                }
+                if(Name==""){
+                    alert("Please provide a name!");
+                    return;
+                }
+                if (Category=="---Select---") {
+                    alert("Please select a Category!");
+                    return;
+                }
+                if(Items.includes(Code)){
+                    alert("Duplicate Code found!");
+                    return;
+                }
+                var Item={
+                    Code: Code, Name: Name, Description: Description, CategoryId: CategoryId, Category: Category,Sl:0,Price:Price
+                }
+                Item.Sl=orders.length+1;
+                orders.push(Item);
+                addOnTable();
+                clearItem();
+            });
+            function addOnTable(){
+                $("#tbodyId").empty();
+                var sl=0;
+                $.each(orders,function(index,data){
+                    Items.push(data.Code);
+                    sl+=1;
+                    $("#tbodyId").append("<tr><td>"+sl+"</td><td>"
+                        + data.Code + "</td><td>"
+                        + data.Name + "</td><td>"
+                        + data.Price + "</td><td>"
+                        + data.Description + "</td><td>"
+                        + data.Category + "</td><td>"
+                        + '<a href="#" class="on-default remove-row deleteSup" data-id="' + sl + '" id="delete" value="' + sl + '"><i class="glyphicon glyphicon-trash"></i></a>' + "</td></tr>"
+                    )
+                })
+            }
+            function clearItem(){
+                $("#Code").val("");
+                $("#Name").val("");
+                $("#Price").val("");
+                $("#Description").val("");
+                $("#CategoryId").val("#CategoryId option:first-child");
+            }
+            $("#save").click(function(){
+                if(orders!=0){
+                    $.ajax({
+                        url:'@Url.Action("Create","Item")',
+                        type:'POST',
+                        data:{items:orders},
+                        datatype:'json',
+                        success:function(datas){
+                            if (datas!=0) {
+                                alert("Successfully saved!");
+
+                                    //function () {
+                                    //    clearItem();
+                                    //});
+                                //$("#save").prop("disabled", false);
+                                orders = [];
+                                $('#tbodyId').empty();
+
+                            }
+                        }
+                    })
+                }
+            })
+            $(document).on("click","#delete", function(){
+                var id=$(this).attr("value");
+                deleteRow(id);
+                addOnTable();
+            });
+            function deleteRow(sl){
+                var newOrder=[];
+                var newSl=0;
+                $.each(orders,function(index,data){
+                    if(data.Sl!=sl){
+                        newSl++;
+                        data.Sl=newSl;
+                        data.Id=0;
+                        newOrder.push(data);
+                        Items=new Array();
+                        Items.push(data.Code);
+                    }
+                });
+                orders=new Array();
+                orders=newOrder;
+            };
+        })
+    </script>
+}
+ 
